@@ -12,6 +12,8 @@
     let centerY = 0.5;
 
     let canvas, context;
+    let stepTime = 0;
+    let drawTime = 0;
 
     let timerId;
     let speed = 10;
@@ -60,7 +62,7 @@
         }
     }
 
-    function drawGrid(cellSize, w, h) {
+    function drawGrid(cellSize) {
         clearCanvas()
         drawGridLines()
         drawCells()
@@ -184,6 +186,7 @@
     }
 
     function updateGrid(births, deaths) {
+        let t0 = performance.now()
         if ((births.length==0)&(deaths.length===0)) {stop()}
         game.update(births, deaths);
         for (let cell of births) {
@@ -192,11 +195,14 @@
         for (let cell of deaths) {
             fillCell(cell, backgroundColor)
         }
+        drawTime=performance.now()-t0
     }
 
     function step() {
+        let t0 = performance.now()
         let births, deaths
         [births, deaths] = game.step();
+        stepTime = performance.now()-t0;
         updateGrid(births, deaths);
     }
 
@@ -226,20 +232,33 @@
         }
     }
 
+    async function onResize() {
+        canvas.width=10
+        canvas.height=10
+        const rect = canvas.parentNode.getBoundingClientRect();
+        // sizes have to be even numbers for crisp lines
+        canvas.width = rect.width - (rect.width%2);
+        canvas.height = rect.height - (rect.height%2);
+        drawGrid(cellSize)
+    }
         onMount(async () => {
-            canvas = document.getElementById("gridCanvas");
             context = canvas.getContext("2d");
+            // There's some resizing going on in the beginning
+            // If I call onResize here it works like half the time
+            // The other half - size of canvas stays 150*300
+            // Or window width*10
+            // This timeout is an ugly hack (but works?...)
+            setTimeout(onResize,42);
+            // onResize()
         });
 
     $: if (canvas) {
-        canvas.width=canvasWidth;
-        canvas.height=canvasHeight;
-        drawGrid(cellSize, canvasWidth, canvasHeight);
+        drawGrid(cellSize);
     }
     $: set_speed(speed);
 </script>
 
-<svelte:window on:keydown={onKeyDown}/>
+<svelte:window on:keydown={onKeyDown} on:resize={onResize}/>
 <div class="container">
     <div class="controls">
         <p>
@@ -263,12 +282,14 @@
         <button on:click={running ? stop : run}>
             {running ? 'Stop' : 'Run'}
         </button>
+        step {stepTime} draw {drawTime}
     </div>
     <div class="canvas"
          bind:clientWidth={canvasWidth}
          bind:clientHeight={canvasHeight}>
         <canvas id="gridCanvas"
                         class="gridCanvas"
+                        bind:this={canvas}
                         on:mouseup={handleMouseUp}
                         on:mousedown={handleMouseDown}
                         on:mousemove={handleMouseMove}
@@ -279,7 +300,7 @@
 <style>
     div.container {
         display:grid;
-        grid-template-rows:110px 1fr;
+        grid-template-rows: auto 1fr;
         height:100%;
     }
     div.controls {
@@ -288,11 +309,8 @@
     div.canvas {
         grid-row:2;
     }
-   .gridCanvas {
+   canvas {
       display: block;
-      box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-      width:100%;
-      height:100%;
    }
     button {
         width: 4em;
