@@ -2,10 +2,10 @@
     import { onMount } from 'svelte';
     import { game } from './game_logic.js'
 
-    const canvasSize = 1000;
     const backgroundColor = 'black'
     const foregroundColor = '#2bb'
     const gridColor = '#555'
+    let canvasWidth, canvasHeight;
 
     let cellSize = 24;
     let centerX = 0.5;
@@ -39,11 +39,13 @@
 
             context.strokeStyle = gridColor
             context.beginPath();
-            for (var i=0; i<Math.ceil(canvasSize/cellSize); i++) {
+            for (var i=0; i<Math.ceil(canvas.height/cellSize); i++) {
                 context.moveTo(0.0, firstTop+0.5+i*cellSize);
-                context.lineTo(canvasSize, firstTop+0.5+i*cellSize);
+                context.lineTo(canvas.width, firstTop+0.5+i*cellSize);
+            }
+            for (var i=0; i<Math.ceil(canvas.width/cellSize); i++) {
                 context.moveTo(firstLeft+0.5+i*cellSize, 0.0);
-                context.lineTo(firstLeft+0.5+i*cellSize, canvasSize);
+                context.lineTo(firstLeft+0.5+i*cellSize, canvas.height);
             }
             context.stroke();
             context.closePath();
@@ -58,8 +60,7 @@
         }
     }
 
-
-    function drawGrid(cellSize, canvasSize) {
+    function drawGrid(cellSize, w, h) {
         clearCanvas()
         drawGridLines()
         drawCells()
@@ -231,50 +232,67 @@
         });
 
     $: if (canvas) {
-        drawGrid(cellSize, canvasSize)
+        canvas.width=canvasWidth;
+        canvas.height=canvasHeight;
+        drawGrid(cellSize, canvasWidth, canvasHeight);
     }
     $: set_speed(speed);
 </script>
 
 <svelte:window on:keydown={onKeyDown}/>
-<p>
-    <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>. Draw shapes with the mouse. Use W,A,S,D or arrows to move around.
-</p>
-<div class="control">
-    <label for="cellSize">Zoom</label>
-    <input id="cellSize" type="range" min="2" max="200" step="2" bind:value={cellSize} />
+<div class="container">
+    <div class="controls">
+        <p>
+            <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>. Draw shapes with the mouse. Use W,A,S,D or arrows to move around.
+        </p>
+        <div class="control">
+            <label for="cellSize">Zoom</label>
+            <input id="cellSize" type="range" min="2" max="200" step="2" bind:value={cellSize} />
+        </div>
+        <div class="control">
+            <label for="speed">Speed</label>
+            <input id="speed" type="range" min="5" max="100" step="1" bind:value={speed} />
+        </div>
+
+        <button on:click={clear}>
+            Clear
+        </button>
+        <button on:click={step} disabled={running}>
+            Step
+        </button>
+        <button on:click={running ? stop : run}>
+            {running ? 'Stop' : 'Run'}
+        </button>
+    </div>
+    <div class="canvas"
+         bind:clientWidth={canvasWidth}
+         bind:clientHeight={canvasHeight}>
+        <canvas id="gridCanvas"
+                        class="gridCanvas"
+                        on:mouseup={handleMouseUp}
+                        on:mousedown={handleMouseDown}
+                        on:mousemove={handleMouseMove}
+                        on:wheel={zoom}
+                        ></canvas>
+    </div>
 </div>
-<div class="control">
-    <label for="speed">Speed</label>
-    <input id="speed" type="range" min="5" max="100" step="1" bind:value={speed} />
-</div>
-
-<button on:click={clear}>
-    Clear
-</button>
-<button on:click={step} disabled={running}>
-    Step
-</button>
-<button on:click={running ? stop : run}>
-    {running ? 'Stop' : 'Run'}
-</button>
-
-<canvas id="gridCanvas"
-                class="gridCanvas"
-                width="1000px"
-                height="1000px"
-                on:mouseup={handleMouseUp}
-                on:mousedown={handleMouseDown}
-                on:mousemove={handleMouseMove}
-                on:wheel={zoom}
-                ></canvas>
-
 <style>
+    div.container {
+        display:grid;
+        grid-template-rows:110px 1fr;
+        height:100%;
+    }
+    div.controls {
+        grid-row: 1;
+    }
+    div.canvas {
+        grid-row:2;
+    }
    .gridCanvas {
       display: block;
-      border: #555 0px solid;
-      border-radius: 5px;
       box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+      width:100%;
+      height:100%;
    }
     button {
         width: 4em;
