@@ -21,7 +21,7 @@
     let drawing = false;
     let drawAlive = true;
 
-    let mousePos;
+    let mouseX, mouseY;
     let numCells=0;
 
     function clearCanvas() {
@@ -94,45 +94,51 @@
 
     function onKeyDown(event) {
         const delta = 100/cellSize
+        let newCenterX = centerX
+        let newCenterY = centerY
         if ((event.keyCode===87)|(event.key===38)) { // w or ArrowUp
-            const newCenterY = Math.round(2*(centerY-delta))/2;
-            const deltaY = newCenterY - centerY;
-            if (drawing) {
-                let x = centerX + (mousePos.x-(canvas.width-canvas.width%2)/2)/cellSize
-                let y = centerY + (mousePos.y-(canvas.height-canvas.height%2)/2)/cellSize
-                let touchedCells = []
-                for (let i=0; i<Math.ceil(Math.abs(deltaY)); i++) {
-                    touchedCells.push(
-                             {r:Math.floor(y+i*Math.sign(deltaY)),
-                                c:Math.floor(x)}
-                            )
-                }
-                if (drawAlive) {
-                    updateGrid(touchedCells, [])
-                } else {
-                    updateGrid([], touchedCells)
-                }
-                console.log(touchedCells)
-            }
-            centerY = newCenterY;
-            drawGrid();
+            newCenterY = Math.round(2*(centerY-delta))/2;
         } else if ((event.keyCode===83)|(event.keyCode===40)) { //s or ArrowDown
-            centerY = Math.round(2*(centerY+delta))/2;
-            drawGrid();
+            newCenterY = Math.round(2*(centerY+delta))/2;
         } else if ((event.keyCode===65)|(event.keyCode===37)) { // a or ArrowLeft
-            centerX = Math.round(2*(centerX-delta))/2;
-            drawGrid();
+            newCenterX = Math.round(2*(centerX-delta))/2;
         } else if ((event.keyCode===68)|(event.keyCode===39)) { //d or ArrowRight
-            centerX = Math.round(2*(centerX+delta))/2;
+            newCenterX = Math.round(2*(centerX+delta))/2;
+        }
+        const deltaX = newCenterX - centerX
+        const deltaY = newCenterY - centerY
+        if ((deltaX!==0)|(deltaY!==0)) {
+            if (drawing) {
+                const cells = getCellsBetween(mouseX, mouseY, mouseX+deltaX, mouseY+deltaY)
+                if (cells.length > 0) {
+                    if (drawAlive) {
+                        updateGrid(cells, [])
+                    } else {
+                        updateGrid([], cells)
+                    }
+                }
+                mouseX += deltaX
+                mouseY += deltaY
+            }
+            centerX = newCenterX
+            centerY = newCenterY
             drawGrid();
+        }
+
+    }
+
+    function coordToCell(cx, cy) {
+        return {
+            r: Math.floor(cy),
+            c: Math.floor(cx),
         }
     }
 
-    function getCellFromMouseEvent(event) {
-        var rect = canvas.getBoundingClientRect();
+    function getCoordFromMouseEvent(event) {
+        const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-        return pixelsToCell(x, y)
+        return pixelsToCoord(x, y)
     }
 
     function pixelsToCoord(x, y) {
@@ -144,11 +150,7 @@
 
     function pixelsToCell(x, y) {
         const [cx, cy] = pixelsToCoord(x, y);
-        const cell = {
-            r: Math.floor(cy),
-            c: Math.floor(cx),
-        };
-        return cell
+        return coordToCell(cx, cy)
     }
 
     function cellToTopLeftPixels(cell) {
@@ -159,30 +161,74 @@
         return pixels
     }
 
+    function integersBetween(z1, z2) {
+        const result = []
+        if (z2 > z1) {
+            for (let i=Math.ceil(z1); i<z2; i++) {
+                result.push(i)
+            }
+        } else {
+            for (let i=Math.floor(z1); i>z2; i--) {
+                result.push(i)
+            }
+        }
+        return result
+    }
+
+    function getCellsBetween(x1, y1, x2, y2) {
+        const lx = x2 - x1;
+        const ly = y2 - y1;
+        let innerX, innerY
+        let cells = []
+        // look for points where the line intersects cell boundaries
+        // not guarding against duplicate cells here
+        for (innerX of integersBetween(x1, x2)) {
+            innerY = y1 + ly * (innerX - x1) / lx
+            cells.push(coordToCell(innerX-1, innerY))
+            cells.push(coordToCell(innerX, innerY))
+        }
+        for (innerY of integersBetween(y1, y2)) {
+            innerX = x1 + lx * (innerY - y1) / ly
+            cells.push(coordToCell(innerX, innerY-1))
+            cells.push(coordToCell(innerX, innerY))
+        }
+        return cells
+    }
+
+
     function handleMouseDown(event) {
-        const cell = getCellFromMouseEvent(event);
+        const [cx, cy] = getCoordFromMouseEvent(event)
+        const cell = coordToCell(cx, cy)
         drawAlive = !(game.isCellAlive(cell))
+        if (drawAlive) {
+            updateGrid([cell], [])
+        } else {
+            updateGrid([], [cell])
+        }
         drawing = true
+        mouseX = cx
+        mouseY = cy
     }
 
     function handleMouseMove(event) {
-        const rect = canvas.getBoundingClientRect();
-        mousePos = {
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top,
-        }
         if (drawing) {
-            let cell = getCellFromMouseEvent(event);
-            if (drawAlive) {
-                updateGrid([cell], [])
-            } else {
-                updateGrid([], [cell])
+            const [cx, cy] = getCoordFromMouseEvent(event)
+            const cells = getCellsBetween(mouseX, mouseY, cx, cy)
+            if (cells.length > 0) {
+                if (drawAlive) {
+                    updateGrid(cells, [])
+                } else {
+                    updateGrid([], cells)
+                }
             }
+            mouseX = cx
+            mouseY = cy
         }
     }
 
     function handleMouseUp(event) {
-        let cell = getCellFromMouseEvent(event);
+        const [cx, cy] = getCoordFromMouseEvent(event)
+        const cell = coordToCell(cx, cy)
         if (drawAlive) {
             updateGrid([cell], [])
         } else {
@@ -271,7 +317,6 @@
 
     $: if (canvas) {
         drawGrid(cellSize);
-        console.log('cellSize', cellSize)
     }
     $: set_speed(speed);
 </script>
