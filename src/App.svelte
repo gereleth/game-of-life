@@ -94,7 +94,7 @@
 
     function onKeyDown(event) {
         const delta = 100/cellSize
-        if ((event.key==='w')|(event.key==='ArrowUp')) {
+        if ((event.keyCode===87)|(event.key===38)) { // w or ArrowUp
             const newCenterY = Math.round(2*(centerY-delta))/2;
             const deltaY = newCenterY - centerY;
             if (drawing) {
@@ -116,13 +116,13 @@
             }
             centerY = newCenterY;
             drawGrid();
-        } else if ((event.key==='s')|(event.key==='ArrowDown')) {
+        } else if ((event.keyCode===83)|(event.keyCode===40)) { //s or ArrowDown
             centerY = Math.round(2*(centerY+delta))/2;
             drawGrid();
-        } else if ((event.key==='a')|(event.key==='ArrowLeft')) {
+        } else if ((event.keyCode===65)|(event.keyCode===37)) { // a or ArrowLeft
             centerX = Math.round(2*(centerX-delta))/2;
             drawGrid();
-        } else if ((event.key==='d')|(event.key==='ArrowRight')) {
+        } else if ((event.keyCode===68)|(event.keyCode===39)) { //d or ArrowRight
             centerX = Math.round(2*(centerX+delta))/2;
             drawGrid();
         }
@@ -135,10 +135,18 @@
         return pixelsToCell(x, y)
     }
 
+    function pixelsToCoord(x, y) {
+        return [
+            centerX + (x-1-canvas.width/2 )/cellSize,
+            centerY + (y-1-canvas.height/2)/cellSize,
+        ]
+    }
+
     function pixelsToCell(x, y) {
+        const [cx, cy] = pixelsToCoord(x, y);
         const cell = {
-            r: Math.floor(centerY + (y-1-canvas.height/2)/cellSize),
-            c: Math.floor(centerX + (x-1-canvas.width/2 )/cellSize),
+            r: Math.floor(cy),
+            c: Math.floor(cx),
         };
         return cell
     }
