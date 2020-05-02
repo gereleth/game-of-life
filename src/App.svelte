@@ -7,7 +7,7 @@
     const gridColor = '#555'
     let canvasWidth, canvasHeight;
 
-    let cellSize = 24;
+    let cellSize = 25;
     let centerX = 0.5;
     let centerY = 0.5;
 
@@ -42,13 +42,16 @@
 
             context.strokeStyle = gridColor
             context.beginPath();
+            let h;
             for (var i=0; i<Math.ceil(canvas.height/cellSize); i++) {
-                context.moveTo(0.0, firstTop+0.5+i*cellSize);
-                context.lineTo(canvas.width, firstTop+0.5+i*cellSize);
+                h = Math.floor(firstTop+i*cellSize)+0.5;
+                context.moveTo(0.0, h);
+                context.lineTo(canvas.width, h);
             }
             for (var i=0; i<Math.ceil(canvas.width/cellSize); i++) {
-                context.moveTo(firstLeft+0.5+i*cellSize, 0.0);
-                context.lineTo(firstLeft+0.5+i*cellSize, canvas.height);
+                h = Math.floor(firstLeft+i*cellSize)+0.5;
+                context.moveTo(h, 0.0);
+                context.lineTo(h, canvas.height);
             }
             context.stroke();
             context.closePath();
@@ -72,7 +75,7 @@
     function zoom(event) {
         event.preventDefault();
         const zoomOut = event.deltaY>0
-        const newCellSize = Math.min(Math.max(2, cellSize + (zoomOut ? -2 : 2)), 200);
+        const newCellSize = Math.min(Math.max(1, cellSize + (zoomOut ? -1 : 1)), 200);
         const rect = canvas.getBoundingClientRect();
         const pixelsX = event.clientX - rect.left - canvas.width/2;
         const pixelsY = event.clientY - rect.top - canvas.height/2;
@@ -86,14 +89,13 @@
     }
 
     function onKeyDown(event) {
-        console.log(event.key)
         const delta = 100/cellSize
         if ((event.key==='w')|(event.key==='ArrowUp')) {
             const newCenterY = Math.round(2*(centerY-delta))/2;
             const deltaY = newCenterY - centerY;
             if (drawing) {
-                let x = centerX + (mousePos.x-canvas.width/2)/cellSize
-                let y = centerY + (mousePos.y-canvas.height/2)/cellSize
+                let x = centerX + (mousePos.x-(canvas.width-canvas.width%2)/2)/cellSize
+                let y = centerY + (mousePos.y-(canvas.height-canvas.height%2)/2)/cellSize
                 let touchedCells = []
                 for (let i=0; i<Math.ceil(Math.abs(deltaY)); i++) {
                     touchedCells.push(
@@ -131,17 +133,18 @@
 
     function pixelsToCell(x, y) {
         const cell = {
-            r: Math.floor(centerY + (y-canvas.height/2)/cellSize),
-            c: Math.floor(centerX + (x-canvas.width/2)/cellSize),
-        }
+            r: Math.floor(centerY + (y-1-canvas.height/2)/cellSize),
+            c: Math.floor(centerX + (x-1-canvas.width/2 )/cellSize),
+        };
         return cell
     }
 
     function cellToTopLeftPixels(cell) {
-        return {
-            x: canvas.width/2  + 1.0 + (cell.c - centerX)*cellSize,
-            y: canvas.height/2 + 1.0 + (cell.r - centerY)*cellSize,
+        const pixels = {
+            x: Math.floor(canvas.width/2  + 1 + (cell.c - centerX)*cellSize),
+            y: Math.floor(canvas.height/2 + 1 + (cell.r - centerY)*cellSize),
         }
+        return pixels
     }
 
     function handleMouseDown(event) {
@@ -239,9 +242,8 @@
         canvas.width=10
         canvas.height=10
         const rect = canvas.parentNode.getBoundingClientRect();
-        // sizes have to be even numbers for crisp lines
-        canvas.width = rect.width - (rect.width%2);
-        canvas.height = rect.height - (rect.height%2);
+        canvas.width = rect.width;
+        canvas.height = rect.height;
         drawGrid(cellSize)
     }
         onMount(async () => {
@@ -257,6 +259,7 @@
 
     $: if (canvas) {
         drawGrid(cellSize);
+        console.log('cellSize', cellSize)
     }
     $: set_speed(speed);
 </script>
@@ -269,7 +272,7 @@
         </p>
         <div class="control">
             <label for="cellSize">Zoom</label>
-            <input id="cellSize" type="range" min="2" max="200" step="2" bind:value={cellSize} />
+            <input id="cellSize" type="range" min="1" max="100" step="1" bind:value={cellSize} />
         </div>
         <div class="control">
             <label for="speed">Speed</label>
