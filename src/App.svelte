@@ -22,6 +22,7 @@
     let drawAlive = true;
 
     let mousePos;
+    let numCells=0;
 
     function clearCanvas() {
         context.clearRect(0,0,canvas.width, canvas.height)
@@ -196,6 +197,7 @@
             fillCell(cell, backgroundColor)
         }
         drawTime=performance.now()-t0
+        numCells = game.livingSet.size;
     }
 
     function step() {
@@ -209,6 +211,7 @@
     function clear() {
         game.clear()
         drawGrid();
+        numCells = game.livingSet.size;
     }
 
     function run() {
@@ -282,7 +285,7 @@
         <button on:click={running ? stop : run}>
             {running ? 'Stop' : 'Run'}
         </button>
-        step {stepTime} draw {drawTime}
+        cells {numCells}; step {stepTime} draw {drawTime}
     </div>
     <div class="canvas"
          bind:clientWidth={canvasWidth}
