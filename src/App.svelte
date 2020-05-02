@@ -74,8 +74,12 @@
 
     function zoom(event) {
         event.preventDefault();
-        const zoomOut = event.deltaY>0
-        const newCellSize = Math.min(Math.max(1, cellSize + (zoomOut ? -1 : 1)), 200);
+        const zoomOut = event.deltaY > 0
+        // change cellSize 5% for every deltaY unit
+        let zoomDelta = Math.floor(Math.abs(event.deltaY)*5*cellSize/100)
+        // If that change is too small then use 1
+        zoomDelta = Math.max(zoomDelta, 1);
+        const newCellSize = Math.min(Math.max(1, cellSize + (zoomOut ? -1 : 1)*zoomDelta), 200);
         const rect = canvas.getBoundingClientRect();
         const pixelsX = event.clientX - rect.left - canvas.width/2;
         const pixelsY = event.clientY - rect.top - canvas.height/2;
@@ -276,7 +280,7 @@
         </div>
         <div class="control">
             <label for="speed">Speed</label>
-            <input id="speed" type="range" min="5" max="100" step="1" bind:value={speed} />
+            <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
         </div>
 
         <button on:click={clear}>
