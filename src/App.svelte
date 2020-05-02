@@ -80,9 +80,9 @@
         // If that change is too small then use 1
         zoomDelta = Math.max(zoomDelta, 1);
         const newCellSize = Math.min(Math.max(1, cellSize + (zoomOut ? -1 : 1)*zoomDelta), 200);
-        const rect = canvas.getBoundingClientRect();
-        const pixelsX = event.clientX - rect.left - canvas.width/2;
-        const pixelsY = event.clientY - rect.top - canvas.height/2;
+        let [pixelsX, pixelsY] = getPixelsFromMouseEvent(event)
+        pixelsX -= canvas.width/2
+        pixelsY -= canvas.height/2
         const relX = centerX + pixelsX/cellSize;
         const relY = centerY + pixelsY/cellSize;
         centerX = (relX - pixelsX/newCellSize);
@@ -133,11 +133,16 @@
             c: Math.floor(cx),
         }
     }
-
-    function getCoordFromMouseEvent(event) {
+    function getPixelsFromMouseEvent(event) {
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
+        return [x, y]
+    }
+
+
+    function getCoordFromMouseEvent(event) {
+        const [x, y] = getPixelsFromMouseEvent(event)
         return pixelsToCoord(x, y)
     }
 
