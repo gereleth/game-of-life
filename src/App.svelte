@@ -20,6 +20,7 @@
     let running = false;
     let drawing = false;
     let drawAlive = true;
+    let helpVisible = false;
 
     let mouseX, mouseY;
     let numCells=0;
@@ -327,64 +328,73 @@
 </script>
 
 <svelte:window on:keydown={onKeyDown} on:resize={onResize}/>
-<div class="container">
-    <div class="controls">
-        <p>
-            <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>. Draw shapes with the mouse. Use W,A,S,D or arrows to move around.
-        </p>
-        <div class="control">
-            <label for="cellSize">Zoom</label>
-            <input id="cellSize" type="range" min="1" max="100" step="1" bind:value={cellSize} />
-        </div>
-        <div class="control">
-            <label for="speed">Speed</label>
-            <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
-        </div>
-
-        <button on:click={clear}>
-            Clear
-        </button>
+<div class="controls">
+    <div class="row">
+        <button on:click={clear}>Clear</button>
+        {numCells} cells
+        <button type="button" name="help" on:click={()=>helpVisible=!helpVisible}>?</button>
+    </div>
+    <div class="row">
+        <label for="cellSize">Zoom</label>
+        <input id="cellSize" type="range" min="1" max="100" step="1" bind:value={cellSize} />
+    </div>
+    <div class="row">
+        <label for="speed">Speed</label>
+        <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
+    </div>
+    <div class="row">
         <button on:click={step} disabled={running}>
             Step
         </button>
         <button on:click={running ? stop : run}>
             {running ? 'Stop' : 'Run'}
         </button>
-        cells {numCells}; step {stepTime} draw {drawTime}
     </div>
-    <div class="canvas"
-         bind:clientWidth={canvasWidth}
-         bind:clientHeight={canvasHeight}>
-        <canvas id="gridCanvas"
-                        class="gridCanvas"
-                        bind:this={canvas}
-                        on:mouseup={handleMouseUp}
-                        on:mousedown={handleMouseDown}
-                        on:mousemove={handleMouseMove}
-                        on:wheel={zoom}
-                        ></canvas>
+    <div class="row">
+        step {stepTime} draw {drawTime}
     </div>
+    {#if helpVisible}
+    <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>.</li>
+        <li>Draw shapes with the mouse. </li>
+        <li>Use W,A,S,D or arrows to move around.</li>
+    </ul>
+    {/if}
 </div>
+<canvas id="gridCanvas"
+                class="gridCanvas"
+                bind:this={canvas}
+                on:mouseup={handleMouseUp}
+                on:mousedown={handleMouseDown}
+                on:mousemove={handleMouseMove}
+                on:wheel={zoom}
+                ></canvas>
+
 <style>
-    div.container {
-        display:grid;
-        grid-template-rows: auto 1fr;
-        height:100%;
-    }
     div.controls {
-        grid-row: 1;
-    }
-    div.canvas {
-        grid-row:2;
+        display:flex;
+        flex-direction:column;
+        position:absolute;
+        top: 5px;
+        left: 5px;
+        width:250px;
+        padding: 0 5px;
+        background:#aaa;
+        border-radius: 5px;
     }
    canvas {
       display: block;
    }
     button {
         width: 4em;
+        border-radius:5px;
+        background:#ccc;
     }
-    div.control {
-        display: inline-block;
-        padding: 0 10px;
+    div.row {
+        display:flex;
+        flex-direction:row;
+        justify-content: space-between;
+        align-items:center;
+        padding: 5px 0;
     }
 </style>
