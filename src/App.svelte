@@ -61,8 +61,8 @@
 
     function drawCells() {
         let cell
-        for (let celljson of game.livingSet) {
-            cell = JSON.parse(celljson);
+        for (let cellString of game.livingSet) {
+            cell = game.parse(cellString);
             fillCell(cell, foregroundColor)
         }
     }
