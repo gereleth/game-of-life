@@ -93,21 +93,20 @@
         cellSize = newCellSize;
     }
 
+    let directions = new Set();
     function onKeyDown(event) {
-        const delta = 100/cellSize
-        let newCenterX = centerX
-        let newCenterY = centerY
         if ((event.keyCode===87)|(event.keyCode===38)) { // w or ArrowUp
-            newCenterY = Math.round(2*(centerY-delta))/2;
+            directions.add('up');
         } else if ((event.keyCode===83)|(event.keyCode===40)) { //s or ArrowDown
-            newCenterY = Math.round(2*(centerY+delta))/2;
+            directions.add('down');
         } else if ((event.keyCode===65)|(event.keyCode===37)) { // a or ArrowLeft
-            newCenterX = Math.round(2*(centerX-delta))/2;
+            directions.add('left');
         } else if ((event.keyCode===68)|(event.keyCode===39)) { //d or ArrowRight
-            newCenterX = Math.round(2*(centerX+delta))/2;
+            directions.add('right');
         }
-        const deltaX = newCenterX - centerX
-        const deltaY = newCenterY - centerY
+        const delta = 20/cellSize
+        const deltaX = (directions.has('right') ? delta : 0) - (directions.has('left') ? delta : 0)
+        const deltaY = (directions.has('down') ? delta : 0) - (directions.has('up') ? delta : 0)
         if ((deltaX!==0)|(deltaY!==0)) {
             if (drawing) {
                 const cells = getCellsBetween(mouseX, mouseY, mouseX+deltaX, mouseY+deltaY)
@@ -121,11 +120,22 @@
                 mouseX += deltaX
                 mouseY += deltaY
             }
-            centerX = newCenterX
-            centerY = newCenterY
+            centerX += deltaX
+            centerY += deltaY
             drawGrid();
         }
+    }
 
+    function onKeyUp(event) {
+        if ((event.keyCode===87)|(event.keyCode===38)) { // w or ArrowUp
+            directions.delete('up');
+        } else if ((event.keyCode===83)|(event.keyCode===40)) { //s or ArrowDown
+            directions.delete('down');
+        } else if ((event.keyCode===65)|(event.keyCode===37)) { // a or ArrowLeft
+            directions.delete('left');
+        } else if ((event.keyCode===68)|(event.keyCode===39)) { //d or ArrowRight
+            directions.delete('right');
+        }
     }
 
     function coordToCell(cx, cy) {
@@ -323,8 +333,8 @@
             const [newcx1, newcy1] = getCoordFromMouseEvent(newTouches[1])
             const deltaX = 0.5*(newcx0-cx0+newcx1-cx1)
             const deltaY = 0.5*(newcy0-cy0+newcy1-cy1)
-            centerX = Math.round(2*(centerX-deltaX))/2;
-            centerY = Math.round(2*(centerY-deltaY))/2;
+            centerX = centerX-deltaX;
+            centerY = centerY-deltaY;
             drawGrid()
             ongoingTouches = newTouches
             }
@@ -432,10 +442,9 @@
     $: set_speed(speed);
 </script>
 
-<svelte:window on:keydown={onKeyDown} on:resize={onResize}/>
+<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:resize={onResize}/>
 <div class="controls">
     <div class="row">
-        <button on:click={clear}>Clear</button>
         {numCells} cells
         <button type="button" name="help" on:click={()=>helpVisible=!helpVisible}>?</button>
     </div>
@@ -444,6 +453,7 @@
         <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
     </div>
     <div class="row">
+        <button on:click={clear}>Clear</button>
         <button on:click={step} disabled={running}>
             Step
         </button>
