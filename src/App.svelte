@@ -445,15 +445,13 @@
 <svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:resize={onResize}/>
 <div class="controls">
     <div class="row">
-        {numCells} cells
-        <button type="button" name="help" on:click={()=>helpVisible=!helpVisible}>?</button>
-    </div>
-    <div class="row">
-        <label for="speed">Speed</label>
-        <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
-    </div>
-    <div class="row">
-        <button on:click={clear}>Clear</button>
+        <button
+            type="button"
+            name="help"
+            title="Show help"
+            on:click={()=>helpVisible=!helpVisible}
+            >?</button>
+        <button on:click={clear} title="Clear all cells from grid">Clear</button>
         <button on:click={step} disabled={running}>
             Step
         </button>
@@ -462,13 +460,27 @@
         </button>
     </div>
     <div class="row">
-        step {stepTime} draw {drawTime}
+        <label for="speed">Speed</label>
+        <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
+    </div>
+    <div class="row">
+        <div>
+            cells:<br/>{numCells}
+        </div>
+        <div>
+            step:<br/>{stepTime} ms
+        </div>
+        <div>
+            draw:<br/>{drawTime} ms
+        </div>
     </div>
     {#if helpVisible}
     <ul>
         <li><a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>.</li>
-        <li>Draw shapes with the mouse. </li>
-        <li>Use W,A,S,D or arrows to move around.</li>
+        <li>Click or touch and drag to draw shapes</li>
+        <li>Press Run to see them evolve</li>
+        <li>Use W,A,S,D or arrows to move around, mouse wheel to zoom</li>
+        <li>Or touch with two fingers to pan and zoom</li>
     </ul>
     {/if}
 </div>
@@ -492,7 +504,7 @@
         position:absolute;
         top: 5px;
         left: 5px;
-        width:250px;
+        max-width:250px;
         padding: 0 5px;
         background:rgba(180,180,180,0.8);
         border-radius: 5px;
@@ -501,7 +513,7 @@
       display: block;
    }
     button {
-        width: 4em;
+        width: 3.5em;
         border-radius:5px;
         background:#bbb;
     }
@@ -511,5 +523,8 @@
         justify-content: space-between;
         align-items:center;
         padding: 5px 0;
+    }
+    div.row>div {
+        flex: 1 1 0px;
     }
 </style>
