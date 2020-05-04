@@ -97,7 +97,7 @@
         const delta = 100/cellSize
         let newCenterX = centerX
         let newCenterY = centerY
-        if ((event.keyCode===87)|(event.key===38)) { // w or ArrowUp
+        if ((event.keyCode===87)|(event.keyCode===38)) { // w or ArrowUp
             newCenterY = Math.round(2*(centerY-delta))/2;
         } else if ((event.keyCode===83)|(event.keyCode===40)) { //s or ArrowDown
             newCenterY = Math.round(2*(centerY+delta))/2;
@@ -148,10 +148,11 @@
     }
 
     function pixelsToCoord(x, y) {
-        return [
+        const coord = [
             centerX + (x-1-canvas.width/2 )/cellSize,
             centerY + (y-1-canvas.height/2)/cellSize,
         ]
+        return coord
     }
 
     function pixelsToCell(x, y) {
@@ -241,6 +242,110 @@
             updateGrid([], [cell])
         }
         drawing = false
+    }
+
+    // touch handling
+    let ongoingTouches = []
+    let lastTouchTime = 0
+
+    function handleTouchStart(event) {
+        event.preventDefault();
+        for (let touch of event.changedTouches) {
+            ongoingTouches.push({
+                id: touch.identifier,
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+            });
+        }
+        lastTouchTime = performance.now();
+        if (ongoingTouches.length==1) {
+            const [cx, cy] = getCoordFromMouseEvent(ongoingTouches[0])
+            const cell = coordToCell(cx, cy)
+            drawAlive = !(game.isCellAlive(cell))
+            drawing = true;
+        } else if (ongoingTouches.length>1) {
+            drawing = false;
+        }
+    }
+    function handleTouchMove(event) {
+        event.preventDefault();
+        let time = performance.now();
+        if ((time - lastTouchTime >= 50)
+                &&(ongoingTouches.length == 1)
+                &&(drawing)) {
+            // one finger moves - draw
+            const newTouch = event.changedTouches[0]
+            const [cx, cy] = getCoordFromMouseEvent(ongoingTouches[0])
+            const [newcx, newcy] = getCoordFromMouseEvent(newTouch)
+            const cells = getCellsBetween(newcx, newcy, cx, cy)
+            if (cells.length > 0) {
+                if (drawAlive) {
+                    updateGrid(cells, [])
+                } else {
+                    updateGrid([], cells)
+                }
+            }
+            ongoingTouches = [{
+                id: newTouch.identifier,
+                clientX: newTouch.clientX,
+                clientY: newTouch.clientY,
+            }];
+            lastTouchTime = time;
+        } else if ((time - lastTouchTime >= 200)
+                    &&(ongoingTouches.length==2)) {
+            // two fingers move - pan or zoom
+            const ids = ongoingTouches.map(item => item.id);
+            let newTouches = [...ongoingTouches]
+            let index
+            for (let touch of event.changedTouches) {
+                index = ids.indexOf(touch.identifier)
+                newTouches[index] = {
+                    id: touch.identifier,
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                }
+            }
+            // how much did distance in pixels change between fingers
+            // scale cell size that much
+            const oldDistance = Math.sqrt(
+                (ongoingTouches[0].clientX-ongoingTouches[1].clientX)**2
+                +(ongoingTouches[0].clientY-ongoingTouches[1].clientY)**2)
+            const newDistance = Math.sqrt(
+                (newTouches[0].clientX-newTouches[1].clientX)**2
+                +(newTouches[0].clientY-newTouches[1].clientY)**2)
+            const newCellSize = Math.max(1, Math.round(newDistance*cellSize/oldDistance))
+            // how much did fingers move from their previous position?
+            // move the screen in that average direction
+            const [cx0, cy0] = getCoordFromMouseEvent(ongoingTouches[0])
+            const [cx1, cy1] = getCoordFromMouseEvent(ongoingTouches[1])
+            cellSize = newCellSize
+            const [newcx0, newcy0] = getCoordFromMouseEvent(newTouches[0])
+            const [newcx1, newcy1] = getCoordFromMouseEvent(newTouches[1])
+            const deltaX = 0.5*(newcx0-cx0+newcx1-cx1)
+            const deltaY = 0.5*(newcy0-cy0+newcy1-cy1)
+            centerX = Math.round(2*(centerX-deltaX))/2;
+            centerY = Math.round(2*(centerY-deltaY))/2;
+            drawGrid()
+            ongoingTouches = newTouches
+            }
+    }
+
+    function handleTouchEnd(event) {
+        event.preventDefault();
+        if (drawing && (ongoingTouches.length===1)) {
+            const [cx, cy] = getCoordFromMouseEvent(event.changedTouches[0])
+            const cell = coordToCell(cx, cy)
+            if (drawAlive) {
+                updateGrid([cell], [])
+            } else {
+                updateGrid([], [cell])
+            }
+            drawing = false;
+        }
+        for (let touch of event.changedTouches) {
+            ongoingTouches = ongoingTouches.filter(item => item.id!==touch.identifier)
+        }
+        lastTouchTime = performance.now();
     }
 
     function fillCell(cell, color) {
@@ -335,10 +440,6 @@
         <button type="button" name="help" on:click={()=>helpVisible=!helpVisible}>?</button>
     </div>
     <div class="row">
-        <label for="cellSize">Zoom</label>
-        <input id="cellSize" type="range" min="1" max="100" step="1" bind:value={cellSize} />
-    </div>
-    <div class="row">
         <label for="speed">Speed</label>
         <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
     </div>
@@ -368,6 +469,10 @@
                 on:mousedown={handleMouseDown}
                 on:mousemove={handleMouseMove}
                 on:wheel={zoom}
+                on:touchstart={handleTouchStart}
+                on:touchmove={handleTouchMove}
+                on:touchend={handleTouchEnd}
+                on:touchcancel={handleTouchEnd}
                 ></canvas>
 
 <style>
@@ -379,7 +484,7 @@
         left: 5px;
         width:250px;
         padding: 0 5px;
-        background:#aaa;
+        background:rgba(180,180,180,0.8);
         border-radius: 5px;
     }
    canvas {
@@ -388,7 +493,7 @@
     button {
         width: 4em;
         border-radius:5px;
-        background:#ccc;
+        background:#bbb;
     }
     div.row {
         display:flex;
