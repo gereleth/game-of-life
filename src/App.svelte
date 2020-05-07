@@ -378,7 +378,7 @@
         for (let cell of deaths) {
             fillCell(cell, backgroundColor)
         }
-        drawTime=performance.now()-t0
+        drawTime=Math.round(performance.now()-t0);
         numCells = game.livingSet.size;
     }
 
@@ -386,7 +386,7 @@
         let t0 = performance.now()
         let births, deaths
         [births, deaths] = game.step();
-        stepTime = performance.now()-t0;
+        stepTime = Math.round(performance.now()-t0);
         updateGrid(births, deaths);
     }
 
