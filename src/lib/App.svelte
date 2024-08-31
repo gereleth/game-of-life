@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { untrack } from 'svelte';
     import { game } from './game_logic.js'
 
     const backgroundColor = 'black'
@@ -15,22 +16,22 @@
     let canvas
     /**@type {CanvasRenderingContext2D}*/
     let context;
-    let stepTime = 0;
-    let drawTime = 0;
+    let stepTime = $state(0);
+    let drawTime = $state(0);
 
     /** @type {Number}*/
     let timerId;
-    let speed = 10;
-    let running = false;
-    let drawing = false;
-    let drawAlive = true;
-    let helpVisible = false;
+    let speed = $state(10);
+    let running = $state(false);
+    let drawing = $state(false);
+    let drawAlive = $state(true);
+    let helpVisible = $state(false);
 
     /** @type {Number}*/
     let mouseX
     /** @type {Number}*/
     let mouseY;
-    let numCells=0;
+    let numCells=$state(0);
 
     function clearCanvas() {
         context.clearRect(0,0,canvas.width, canvas.height)
@@ -75,7 +76,6 @@
     }
 
     function drawGrid(_) {
-        console.log('draw grid')
         clearCanvas()
         drawGridLines()
         drawCells()
@@ -419,30 +419,19 @@
         numCells = game.livingSet.size;
     }
 
-    // let stepnum = 0
-    // let maxsteps = 500
-    // let time_start = 0
     function run() {
-        // time_start = performance.now();
-        // stepnum = 0
-        if (!running) {
-            timerId = setInterval(() => step(), 1000/speed);
-            running = true;
+        step()
+        if (running) {
+            timerId = setTimeout(run, 1000/speed)
         }
     }
 
-    function stop() {
-        // let t = performance.now()
-        // console.log(`run ${maxsteps} steps in ${t - time_start} ms`)
+    function toggleRun() {
         if (running) {
-            clearInterval(timerId)
-            running = false;
-        }
-    }
-
-    function set_speed(speed) {
-        if (running) {
-            stop()
+            clearTimeout(timerId)
+            running = false
+        } else {
+            running = true
             run()
         }
     }
@@ -451,7 +440,6 @@
         canvas.width=10
         canvas.height=10
         const rect = document.body.getBoundingClientRect();
-        console.log(rect)
         canvas.width = rect.width;
         canvas.height = rect.height;
         drawGrid(cellSize)
@@ -469,7 +457,6 @@
     $effect(()=> { if (canvas) {
         drawGrid(cellSize);
     }})
-    $effect(()=>set_speed(speed))
 </script>
 
 <svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp} onresize={onResize}/>
@@ -485,7 +472,7 @@
         <button onclick={step} disabled={running}>
             Step
         </button>
-        <button onclick={running ? stop : run}>
+        <button onclick={toggleRun}>
             {running ? 'Stop' : 'Run'}
         </button>
     </div>
