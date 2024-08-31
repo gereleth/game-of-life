@@ -75,6 +75,12 @@ function Game() {
         }
         return [births, deaths]
     }
+    let births = []
+    let n = 256
+    for (let index = 0; index < 2*n; index++) {
+        births.push({r:index-n,c:0})
+    }
+    this.update(births, [])
 }
 
 export const game = new Game();

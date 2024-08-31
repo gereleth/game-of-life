@@ -7,14 +7,18 @@
     const gridColor = '#555'
     let canvasWidth, canvasHeight;
 
-    let cellSize = 25;
+    let cellSize = $state(25);
     let centerX = 0.5;
     let centerY = 0.5;
 
-    let canvas, context;
+    /**@type {HTMLCanvasElement}*/
+    let canvas
+    /**@type {CanvasRenderingContext2D}*/
+    let context;
     let stepTime = 0;
     let drawTime = 0;
 
+    /** @type {Number}*/
     let timerId;
     let speed = 10;
     let running = false;
@@ -22,7 +26,10 @@
     let drawAlive = true;
     let helpVisible = false;
 
-    let mouseX, mouseY;
+    /** @type {Number}*/
+    let mouseX
+    /** @type {Number}*/
+    let mouseY;
     let numCells=0;
 
     function clearCanvas() {
@@ -44,12 +51,12 @@
             context.strokeStyle = gridColor
             context.beginPath();
             let h;
-            for (var i=0; i<Math.ceil(canvas.height/cellSize); i++) {
+            for (let i=0; i<Math.ceil(canvas.height/cellSize); i++) {
                 h = Math.floor(firstTop+i*cellSize)+0.5;
                 context.moveTo(0.0, h);
                 context.lineTo(canvas.width, h);
             }
-            for (var i=0; i<Math.ceil(canvas.width/cellSize); i++) {
+            for (let i=0; i<Math.ceil(canvas.width/cellSize); i++) {
                 h = Math.floor(firstLeft+i*cellSize)+0.5;
                 context.moveTo(h, 0.0);
                 context.lineTo(h, canvas.height);
@@ -67,12 +74,16 @@
         }
     }
 
-    function drawGrid(cellSize) {
+    function drawGrid(_) {
+        console.log('draw grid')
         clearCanvas()
         drawGridLines()
         drawCells()
     }
 
+    /**
+	 * @param {WheelEvent} event
+	 */
     function zoom(event) {
         event.preventDefault();
         const zoomOut = event.deltaY > 0
@@ -94,20 +105,23 @@
     }
 
     let directions = new Set();
+    /**
+	 * @param {KeyboardEvent} event
+	 */
     function onKeyDown(event) {
-        if ((event.keyCode===87)|(event.keyCode===38)) { // w or ArrowUp
+        if ((event.code==="KeyW")||(event.code==="ArrowUp")) { // w or ArrowUp
             directions.add('up');
-        } else if ((event.keyCode===83)|(event.keyCode===40)) { //s or ArrowDown
+        } else if ((event.code==="KeyS")||(event.code==="ArrowDown")) { //s or ArrowDown
             directions.add('down');
-        } else if ((event.keyCode===65)|(event.keyCode===37)) { // a or ArrowLeft
+        } else if ((event.code==="KeyA")||(event.code==="ArrowLeft")) { // a or ArrowLeft
             directions.add('left');
-        } else if ((event.keyCode===68)|(event.keyCode===39)) { //d or ArrowRight
+        } else if ((event.code==="KeyD")||(event.code==="ArrowRight")) { //d or ArrowRight
             directions.add('right');
         }
         const delta = 20/cellSize
         const deltaX = (directions.has('right') ? delta : 0) - (directions.has('left') ? delta : 0)
         const deltaY = (directions.has('down') ? delta : 0) - (directions.has('up') ? delta : 0)
-        if ((deltaX!==0)|(deltaY!==0)) {
+        if ((deltaX!==0)||(deltaY!==0)) {
             if (drawing) {
                 const cells = getCellsBetween(mouseX, mouseY, mouseX+deltaX, mouseY+deltaY)
                 if (cells.length > 0) {
@@ -126,14 +140,18 @@
         }
     }
 
+    
+    /**
+	 * @param {KeyboardEvent} event
+	 */
     function onKeyUp(event) {
-        if ((event.keyCode===87)|(event.keyCode===38)) { // w or ArrowUp
+        if ((event.code==="KeyW")||(event.code==="ArrowUp")) { // w or ArrowUp
             directions.delete('up');
-        } else if ((event.keyCode===83)|(event.keyCode===40)) { //s or ArrowDown
+        } else if ((event.code==="KeyS")||(event.code==="ArrowDown")) { //s or ArrowDown
             directions.delete('down');
-        } else if ((event.keyCode===65)|(event.keyCode===37)) { // a or ArrowLeft
+        } else if ((event.code==="KeyA")||(event.code==="ArrowLeft")) { // a or ArrowLeft
             directions.delete('left');
-        } else if ((event.keyCode===68)|(event.keyCode===39)) { //d or ArrowRight
+        } else if ((event.code==="KeyD")||(event.code==="ArrowRight")) { //d or ArrowRight
             directions.delete('right');
         }
     }
@@ -359,13 +377,15 @@
     }
 
     function fillCell(cell, color) {
-        context.fillStyle = color;
         const pixels = cellToTopLeftPixels(cell)
-        context.fillRect(
-            pixels.x, pixels.y,
-            cellSize-(cellSize<=2 ? 0.0 : 1.0),
-            cellSize-(cellSize<=2 ? 0.0 : 1.0)
-        );
+        if ((pixels.x>-cellSize)&(pixels.x<=canvas.width)&(pixels.y>-cellSize)&(pixels.y<=canvas.height)) {
+            context.fillStyle = color;
+            context.fillRect(
+                pixels.x, pixels.y,
+                cellSize-(cellSize<=2 ? 0.0 : 1.0),
+                cellSize-(cellSize<=2 ? 0.0 : 1.0)
+            );
+        }
     }
 
     function updateGrid(births, deaths) {
@@ -383,11 +403,14 @@
     }
 
     function step() {
+        // stepnum += 1
         let t0 = performance.now()
         let births, deaths
         [births, deaths] = game.step();
         stepTime = Math.round(performance.now()-t0);
+        // requestAnimationFrame(()=>updateGrid(births, deaths))
         updateGrid(births, deaths);
+        // if (stepnum==maxsteps) {stop()}
     }
 
     function clear() {
@@ -396,7 +419,12 @@
         numCells = game.livingSet.size;
     }
 
+    // let stepnum = 0
+    // let maxsteps = 500
+    // let time_start = 0
     function run() {
+        // time_start = performance.now();
+        // stepnum = 0
         if (!running) {
             timerId = setInterval(() => step(), 1000/speed);
             running = true;
@@ -404,6 +432,8 @@
     }
 
     function stop() {
+        // let t = performance.now()
+        // console.log(`run ${maxsteps} steps in ${t - time_start} ms`)
         if (running) {
             clearInterval(timerId)
             running = false;
@@ -420,7 +450,8 @@
     async function onResize() {
         canvas.width=10
         canvas.height=10
-        const rect = canvas.parentNode.getBoundingClientRect();
+        const rect = document.body.getBoundingClientRect();
+        console.log(rect)
         canvas.width = rect.width;
         canvas.height = rect.height;
         drawGrid(cellSize)
@@ -432,30 +463,29 @@
             // The other half - size of canvas stays 150*300
             // Or window width*10
             // This timeout is an ugly hack (but works?...)
-            setTimeout(onResize,42);
-            // onResize()
+            setTimeout(onResize, 42);
         });
 
-    $: if (canvas) {
+    $effect(()=> { if (canvas) {
         drawGrid(cellSize);
-    }
-    $: set_speed(speed);
+    }})
+    $effect(()=>set_speed(speed))
 </script>
 
-<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:resize={onResize}/>
+<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp} onresize={onResize}/>
 <div class="controls">
     <div class="row">
         <button
             type="button"
             name="help"
             title="Show help"
-            on:click={()=>helpVisible=!helpVisible}
+            onclick={()=>helpVisible=!helpVisible}
             >?</button>
-        <button on:click={clear} title="Clear all cells from grid">Clear</button>
-        <button on:click={step} disabled={running}>
+        <button onclick={clear} title="Clear all cells from grid">Clear</button>
+        <button onclick={step} disabled={running}>
             Step
         </button>
-        <button on:click={running ? stop : run}>
+        <button onclick={running ? stop : run}>
             {running ? 'Stop' : 'Run'}
         </button>
     </div>
@@ -487,14 +517,14 @@
 <canvas id="gridCanvas"
                 class="gridCanvas"
                 bind:this={canvas}
-                on:mouseup={handleMouseUp}
-                on:mousedown={handleMouseDown}
-                on:mousemove={handleMouseMove}
-                on:wheel={zoom}
-                on:touchstart={handleTouchStart}
-                on:touchmove={handleTouchMove}
-                on:touchend={handleTouchEnd}
-                on:touchcancel={handleTouchEnd}
+                onmouseup={handleMouseUp}
+                onmousedown={handleMouseDown}
+                onmousemove={handleMouseMove}
+                onwheel={zoom}
+                ontouchstart={handleTouchStart}
+                ontouchmove={handleTouchMove}
+                ontouchend={handleTouchEnd}
+                ontouchcancel={handleTouchEnd}
                 ></canvas>
 
 <style>
