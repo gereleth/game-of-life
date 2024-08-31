@@ -88,7 +88,7 @@
         event.preventDefault();
         const zoomOut = event.deltaY > 0
         // change cellSize 5% for every deltaY unit
-        let zoomDelta = Math.floor(Math.abs(event.deltaY)*5*cellSize/100)
+        let zoomDelta = Math.floor(5*cellSize/100)
         // If that change is too small then use 1
         zoomDelta = Math.max(zoomDelta, 1);
         const newCellSize = Math.min(Math.max(1, cellSize + (zoomOut ? -1 : 1)*zoomDelta), 200);
