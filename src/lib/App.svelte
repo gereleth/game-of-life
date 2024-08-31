@@ -378,7 +378,7 @@
 
     function fillCell(cell, color) {
         const pixels = cellToTopLeftPixels(cell)
-        if ((pixels.x>-cellSize)&(pixels.x<=canvas.width)&(pixels.y>-cellSize)&(pixels.y<=canvas.height)) {
+        if ((pixels.x>-cellSize)&&(pixels.x<=canvas.width)&&(pixels.y>-cellSize)&&(pixels.y<=canvas.height)) {
             context.fillStyle = color;
             context.fillRect(
                 pixels.x, pixels.y,
@@ -390,7 +390,7 @@
 
     function updateGrid(births, deaths) {
         let t0 = performance.now()
-        if ((births.length==0)&(deaths.length===0)) {stop()}
+        if ((births.length==0)&&(deaths.length===0)) {stop()}
         game.update(births, deaths);
         for (let cell of births) {
             fillCell(cell, foregroundColor)
