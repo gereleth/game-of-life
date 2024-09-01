@@ -95,8 +95,8 @@
                 mouseX += deltaX
                 mouseY += deltaY
             }
-            centerX += deltaX
-            centerY += deltaY
+            centerX -= deltaX
+            centerY -= deltaY
         }
     }
 

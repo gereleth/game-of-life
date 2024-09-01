@@ -25,6 +25,7 @@
 
     $effect(()=>{
         clearCanvas()
+        // draw grid lines
         if (cellSize>=10) {
             const dx = cellSize*(centerX-Math.floor(centerX))
             const centerLeft = $size.width/2 - dx
