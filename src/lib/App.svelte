@@ -1,16 +1,17 @@
 <script>
     import { onMount } from 'svelte';
-    import { untrack } from 'svelte';
     import { game } from './game_logic.js'
+	import Canvas from './Canvas.svelte';
+	import Grid from './Grid.svelte';
 
-    const backgroundColor = 'black'
+    const backgroundColor = '#000'
     const foregroundColor = '#2bb'
     const gridColor = '#555'
     let canvasWidth, canvasHeight;
 
     let cellSize = $state(25);
-    let centerX = 0.5;
-    let centerY = 0.5;
+    let centerX = $state(0.5);
+    let centerY = $state(0.5);
 
     /**@type {HTMLCanvasElement}*/
     let canvas
@@ -33,52 +34,12 @@
     let mouseY;
     let numCells=$state(0);
 
-    function clearCanvas() {
-        context.clearRect(0,0,canvas.width, canvas.height)
-        context.fillStyle = backgroundColor
-        context.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function drawGridLines() {
-        if (cellSize>=10) {
-            const dx = cellSize*(centerX-Math.floor(centerX))
-            const centerLeft = canvas.width/2 - dx
-            const firstLeft = centerLeft - cellSize*Math.floor(centerLeft/cellSize)
-
-            const dy = cellSize*(centerY-Math.floor(centerY))
-            const centerTop = canvas.height/2 - dy
-            const firstTop = centerTop - cellSize*Math.floor(centerTop/cellSize)
-
-            context.strokeStyle = gridColor
-            context.beginPath();
-            let h;
-            for (let i=0; i<Math.ceil(canvas.height/cellSize); i++) {
-                h = Math.floor(firstTop+i*cellSize)+0.5;
-                context.moveTo(0.0, h);
-                context.lineTo(canvas.width, h);
-            }
-            for (let i=0; i<Math.ceil(canvas.width/cellSize); i++) {
-                h = Math.floor(firstLeft+i*cellSize)+0.5;
-                context.moveTo(h, 0.0);
-                context.lineTo(h, canvas.height);
-            }
-            context.stroke();
-            context.closePath();
-        }
-    }
-
     function drawCells() {
         let cell
         for (let cellString of game.livingSet) {
             cell = game.parse(cellString);
             fillCell(cell, foregroundColor)
         }
-    }
-
-    function drawGrid(_) {
-        clearCanvas()
-        drawGridLines()
-        drawCells()
     }
 
     /**
@@ -136,7 +97,6 @@
             }
             centerX += deltaX
             centerY += deltaY
-            drawGrid();
         }
     }
 
@@ -389,33 +349,33 @@
     }
 
     function updateGrid(births, deaths) {
-        let t0 = performance.now()
-        if ((births.length==0)&&(deaths.length===0)) {stop()}
-        game.update(births, deaths);
-        for (let cell of births) {
-            fillCell(cell, foregroundColor)
-        }
-        for (let cell of deaths) {
-            fillCell(cell, backgroundColor)
-        }
-        drawTime=Math.round(performance.now()-t0);
-        numCells = game.livingSet.size;
+        // let t0 = performance.now()
+        // if ((births.length==0)&&(deaths.length===0)) {stop()}
+        // game.update(births, deaths);
+        // for (let cell of births) {
+        //     fillCell(cell, foregroundColor)
+        // }
+        // for (let cell of deaths) {
+        //     fillCell(cell, backgroundColor)
+        // }
+        // drawTime=Math.round(performance.now()-t0);
+        // numCells = game.livingSet.size;
     }
 
     function step() {
-        // stepnum += 1
-        let t0 = performance.now()
-        let births, deaths
-        [births, deaths] = game.step();
-        stepTime = Math.round(performance.now()-t0);
-        // requestAnimationFrame(()=>updateGrid(births, deaths))
-        updateGrid(births, deaths);
-        // if (stepnum==maxsteps) {stop()}
+        // // stepnum += 1
+        // let t0 = performance.now()
+        // let births, deaths
+        // [births, deaths] = game.step();
+        // stepTime = Math.round(performance.now()-t0);
+        // // requestAnimationFrame(()=>updateGrid(births, deaths))
+        // updateGrid(births, deaths);
+        // // if (stepnum==maxsteps) {stop()}
     }
 
     function clear() {
         game.clear()
-        drawGrid();
+        // drawGrid();
         numCells = game.livingSet.size;
     }
 
@@ -436,30 +396,12 @@
         }
     }
 
-    async function onResize() {
-        canvas.width=10
-        canvas.height=10
-        const rect = document.body.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-        drawGrid(cellSize)
-    }
         onMount(async () => {
-            context = canvas.getContext("2d");
-            // There's some resizing going on in the beginning
-            // If I call onResize here it works like half the time
-            // The other half - size of canvas stays 150*300
-            // Or window width*10
-            // This timeout is an ugly hack (but works?...)
-            setTimeout(onResize, 42);
-        });
 
-    $effect(()=> { if (canvas) {
-        drawGrid(cellSize);
-    }})
+        });
 </script>
 
-<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp} onresize={onResize}/>
+<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp}/>
 <div class="controls">
     <div class="row">
         <button
@@ -501,7 +443,10 @@
     </ul>
     {/if}
 </div>
-<canvas id="gridCanvas"
+<Canvas>
+    <Grid {cellSize} {centerX} {centerY} {gridColor} {backgroundColor}></Grid>
+</Canvas>
+<!-- <canvas id="gridCanvas"
                 class="gridCanvas"
                 bind:this={canvas}
                 onmouseup={handleMouseUp}
@@ -512,7 +457,7 @@
                 ontouchmove={handleTouchMove}
                 ontouchend={handleTouchEnd}
                 ontouchcancel={handleTouchEnd}
-                ></canvas>
+                ></canvas> -->
 
 <style>
     div.controls {
@@ -526,9 +471,6 @@
         background:rgba(180,180,180,0.8);
         border-radius: 5px;
     }
-   canvas {
-      display: block;
-   }
     button {
         width: 3.5em;
         border-radius:5px;
