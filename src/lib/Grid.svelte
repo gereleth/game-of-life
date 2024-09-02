@@ -3,24 +3,24 @@
 
     /**@type {CanvasRenderingContext2D}*/
     const ctx = getContext('getCtx')()
-    const size = getContext('size')
+    
+    const geometry = getContext('geometry')
+
+    let {centerX, centerY, cellSize, width, height} = $derived($geometry)
 
     /**
      * @typedef {Object} GridProps
-     * @property {number} cellSize - size of a single sell in pixels
-     * @property {number} centerX
-     * @property {number} centerY
      * @property {String} backgroundColor
      * @property {String} gridColor
      */
 
     /** @type {GridProps}*/
-    let { cellSize, centerX, centerY, backgroundColor, gridColor } = $props();
+    let { backgroundColor, gridColor } = $props();
 
     function clearCanvas() {
-        ctx.clearRect(0,0,$size.width, $size.height)
+        ctx.clearRect(0,0,width, height)
         ctx.fillStyle = backgroundColor
-        ctx.fillRect(0,0,$size.width, $size.height)
+        ctx.fillRect(0,0,width, height)
     }
 
     $effect(()=>{
@@ -28,25 +28,25 @@
         // draw grid lines
         if (cellSize>=10) {
             const dx = cellSize*(centerX-Math.floor(centerX))
-            const centerLeft = $size.width/2 - dx
+            const centerLeft = width/2 - dx
             const firstLeft = centerLeft - cellSize*Math.floor(centerLeft/cellSize)
 
             const dy = cellSize*(centerY-Math.floor(centerY))
-            const centerTop = $size.height/2 - dy
+            const centerTop = height/2 - dy
             const firstTop = centerTop - cellSize*Math.floor(centerTop/cellSize)
 
             ctx.strokeStyle = gridColor
             ctx.beginPath();
             let h;
-            for (let i=0; i<Math.ceil($size.height/cellSize); i++) {
+            for (let i=0; i<Math.ceil(height/cellSize); i++) {
                 h = Math.floor(firstTop+i*cellSize)+0.5;
                 ctx.moveTo(0.0, h);
-                ctx.lineTo($size.width, h);
+                ctx.lineTo(width, h);
             }
-            for (let i=0; i<Math.ceil($size.width/cellSize); i++) {
+            for (let i=0; i<Math.ceil(width/cellSize); i++) {
                 h = Math.floor(firstLeft+i*cellSize)+0.5;
                 ctx.moveTo(h, 0.0);
-                ctx.lineTo(h, $size.height);
+                ctx.lineTo(h, height);
             }
             ctx.stroke();
             ctx.closePath();

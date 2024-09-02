@@ -1,6 +1,5 @@
 <script>
-	import { onMount, setContext } from 'svelte';
-    import {derived, writable} from 'svelte/store';
+	import { onMount, setContext, getContext } from 'svelte';
 
     let {children} = $props()
 
@@ -9,24 +8,19 @@
 	/** @type {HTMLCanvasElement}*/
 	let canvas;
 
-	let size = writable({width: 0, height: 0})
+	let geometry = getContext('geometry')
 
 	setContext('getCtx', () => ctx);
-    setContext('size', size)
-
-
 
 	onMount(() => {
 		ctx = canvas.getContext('2d');
 	});
 </script>
 
-<svelte:window bind:innerHeight={$size.height} bind:innerWidth={$size.width}/>
-
-<canvas bind:this={canvas} height={$size.height} width={$size.width}> </canvas>
+<canvas bind:this={canvas} height={$geometry.height} width={$geometry.width}> </canvas>
 
 {#if ctx}
-	{#key $size}
+	{#key $geometry}
 		{#if children}
              {@render children()}
         {/if}

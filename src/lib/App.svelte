@@ -1,13 +1,24 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onMount, setContext } from 'svelte';
     import { game } from './game_logic.js'
 	import Canvas from './Canvas.svelte';
 	import Grid from './Grid.svelte';
+	import { writable } from 'svelte/store';
+
+
+    let geometry = writable({
+        width: 0,
+        height: 0,
+        centerX: 0.5,
+        centerY: 0.5,
+        cellSize: 40,
+    })
+
+    setContext('geometry', geometry)
 
     const backgroundColor = '#000'
     const foregroundColor = '#2bb'
     const gridColor = '#555'
-    let canvasWidth, canvasHeight;
 
     let cellSize = $state(25);
     let centerX = $state(0.5);
@@ -401,7 +412,13 @@
         });
 </script>
 
-<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp}/>
+<svelte:window 
+    bind:innerHeight={$geometry.height} 
+    bind:innerWidth={$geometry.width} 
+    onkeydown={onKeyDown} 
+    onkeyup={onKeyUp}
+/>
+
 <div class="controls">
     <div class="row">
         <button
@@ -444,7 +461,7 @@
     {/if}
 </div>
 <Canvas>
-    <Grid {cellSize} {centerX} {centerY} {gridColor} {backgroundColor}></Grid>
+    <Grid {gridColor} {backgroundColor}></Grid>
 </Canvas>
 <!-- <canvas id="gridCanvas"
                 class="gridCanvas"
