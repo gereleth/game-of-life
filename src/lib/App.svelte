@@ -1,7 +1,9 @@
 <script>
     import { onMount, setContext } from 'svelte';
-    import { game } from './game_logic.js'
+    import { GameOfLife } from './game_logic.js'
+    import {controls} from '$lib/controls.js';
 	import Canvas from './Canvas.svelte';
+    import LivingCells from './LivingCells.svelte';
 	import Grid from './Grid.svelte';
 	import { writable } from 'svelte/store';
 
@@ -23,7 +25,8 @@
     let cellSize = $state(25);
     let centerX = $state(0.5);
     let centerY = $state(0.5);
-
+    /** @type {LivingCells}*/
+    let cells
     /**@type {HTMLCanvasElement}*/
     let canvas
     /**@type {CanvasRenderingContext2D}*/
@@ -33,7 +36,7 @@
 
     /** @type {Number}*/
     let timerId;
-    let speed = $state(10);
+    let delay = $state(100);
     let running = $state(false);
     let drawing = $state(false);
     let drawAlive = $state(true);
@@ -44,14 +47,7 @@
     /** @type {Number}*/
     let mouseY;
     let numCells=$state(0);
-
-    function drawCells() {
-        let cell
-        for (let cellString of game.livingSet) {
-            cell = game.parse(cellString);
-            fillCell(cell, foregroundColor)
-        }
-    }
+    let game = new GameOfLife()
 
     /**
 	 * @param {WheelEvent} event
@@ -347,74 +343,65 @@
         lastTouchTime = performance.now();
     }
 
-    function fillCell(cell, color) {
-        const pixels = cellToTopLeftPixels(cell)
-        if ((pixels.x>-cellSize)&&(pixels.x<=canvas.width)&&(pixels.y>-cellSize)&&(pixels.y<=canvas.height)) {
-            context.fillStyle = color;
-            context.fillRect(
-                pixels.x, pixels.y,
-                cellSize-(cellSize<=2 ? 0.0 : 1.0),
-                cellSize-(cellSize<=2 ? 0.0 : 1.0)
-            );
-        }
-    }
-
-    function updateGrid(births, deaths) {
-        // let t0 = performance.now()
-        // if ((births.length==0)&&(deaths.length===0)) {stop()}
-        // game.update(births, deaths);
-        // for (let cell of births) {
-        //     fillCell(cell, foregroundColor)
-        // }
-        // for (let cell of deaths) {
-        //     fillCell(cell, backgroundColor)
-        // }
-        // drawTime=Math.round(performance.now()-t0);
-        // numCells = game.livingSet.size;
-    }
-
     function step() {
-        // // stepnum += 1
-        // let t0 = performance.now()
-        // let births, deaths
-        // [births, deaths] = game.step();
-        // stepTime = Math.round(performance.now()-t0);
-        // // requestAnimationFrame(()=>updateGrid(births, deaths))
-        // updateGrid(births, deaths);
-        // // if (stepnum==maxsteps) {stop()}
+        let t0 = performance.now()
+        let [births, deaths] = game.step();
+        game.update(births, deaths)
+        stepTime = Math.round(performance.now()-t0);
+    }
+
+    /**
+     * @type {Number}
+     */
+    let lastStepAt = 0
+
+    /**
+     * Animate the canvas - runs all the time
+     * @param {Number} timestamp
+     */
+    function animateStep(timestamp) {
+        if (running) {
+            const elapsed = timestamp - lastStepAt
+            const steps = Math.floor(elapsed / delay)
+            for (let i=0;i<steps;i++) {
+                step()
+                lastStepAt = performance.now()
+                break // todo depending on step time do a few iterations or just one to avoid unresponsiveness
+            }
+            numCells = game.livingCells.size
+        }
+        if (cells && game.drawBuffer.size > 0) {
+            const t0 = performance.now()
+            cells.draw(game.drawBuffer)
+            game.drawBuffer.clear()
+            drawTime = Math.round(performance.now() - t0)
+        }
+        requestAnimationFrame(animateStep)
     }
 
     function clear() {
         game.clear()
-        // drawGrid();
-        numCells = game.livingSet.size;
-    }
-
-    function run() {
-        step()
-        if (running) {
-            timerId = setTimeout(run, 1000/speed)
-        }
+        stepTime = 0
+        numCells = game.livingCells.size;
     }
 
     function toggleRun() {
+        running = !running
         if (running) {
-            clearTimeout(timerId)
-            running = false
-        } else {
-            running = true
-            run()
+            step()
+            lastStepAt = performance.now()
         }
     }
 
-        onMount(async () => {
-
-        });
+    onMount(() => {
+        requestAnimationFrame(animateStep)
+    });
 </script>
 
 <svelte:window 
     bind:innerHeight={$geometry.height} 
     bind:innerWidth={$geometry.width} 
+    use:controls={{geometry, game}}
     onkeydown={onKeyDown} 
     onkeyup={onKeyUp}
 />
@@ -436,8 +423,8 @@
         </button>
     </div>
     <div class="row">
-        <label for="speed">Speed</label>
-        <input id="speed" type="range" min="5" max="500" step="1" bind:value={speed} />
+        <label for="delay">Delay</label>
+        <input id="delay" type="range" min="1" max="500" step="1" bind:value={delay} />
     </div>
     <div class="row">
         <div>
@@ -462,6 +449,7 @@
 </div>
 <Canvas>
     <Grid {gridColor} {backgroundColor}></Grid>
+    <LivingCells {foregroundColor} {backgroundColor} {game} bind:this={cells}></LivingCells>
 </Canvas>
 <!-- <canvas id="gridCanvas"
                 class="gridCanvas"
