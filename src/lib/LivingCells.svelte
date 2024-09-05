@@ -1,5 +1,6 @@
 <script>
     import {getContext, onMount} from 'svelte'
+    import {GameOfLife} from '$lib/game_logic'
 
     /**@type {CanvasRenderingContext2D}*/
     const ctx = getContext('getCtx')()
@@ -12,7 +13,7 @@
      * @typedef {Object} CellsProps
      * @property {String} backgroundColor
      * @property {String} foregroundColor
-     * @property {Any} game
+     * @property {GameOfLife} game
      */
 
     /** @type {CellsProps}*/
@@ -46,7 +47,9 @@
                 // cell died
                 fillCell(cellId, backgroundColor)
             } else {
-                fillCell(cellId, foregroundColor)
+                const hue = (gen+180)%360
+                const color = `hsl(${hue}, 69%, 43%)`
+                fillCell(cellId, color)
             }
         }
     }
