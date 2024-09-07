@@ -1,7 +1,7 @@
 <script>
 	import { onMount, setContext, getContext } from 'svelte';
 
-    let {children} = $props()
+    let {children, ...eventHandlers} = $props()
 
 	/** @type {CanvasRenderingContext2D|null}*/
 	let ctx=$state(null);
@@ -17,7 +17,12 @@
 	});
 </script>
 
-<canvas bind:this={canvas} height={$geometry.height} width={$geometry.width}> </canvas>
+<canvas 
+	bind:this={canvas} 
+	height={$geometry.height} 
+	width={$geometry.width}
+	{...eventHandlers}
+> </canvas>
 
 {#if ctx}
 	{#key $geometry}

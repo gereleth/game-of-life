@@ -1,7 +1,7 @@
 <script>
     import { onMount, setContext } from 'svelte';
     import { GameOfLife } from './game_logic.js'
-    import {controls} from '$lib/controls.js';
+    import {createControls} from '$lib/controls.js';
 	import Canvas from './Canvas.svelte';
     import LivingCells from './LivingCells.svelte';
 	import Grid from './Grid.svelte';
@@ -34,314 +34,14 @@
     let stepTime = $state(0);
     let drawTime = $state(0);
 
-    /** @type {Number}*/
-    let timerId;
     let delay = $state(100);
     let running = $state(false);
-    let drawing = $state(false);
-    let drawAlive = $state(true);
     let helpVisible = $state(false);
 
-    /** @type {Number}*/
-    let mouseX
-    /** @type {Number}*/
-    let mouseY;
     let numCells=$state(0);
     let game = new GameOfLife()
+    const {hotkeys, touch, mouse} = createControls(geometry, game)
 
-    /**
-	 * @param {WheelEvent} event
-	 */
-    function zoom(event) {
-        event.preventDefault();
-        const zoomOut = event.deltaY > 0
-        // change cellSize 5% for every deltaY unit
-        let zoomDelta = Math.floor(5*cellSize/100)
-        // If that change is too small then use 1
-        zoomDelta = Math.max(zoomDelta, 1);
-        const newCellSize = Math.min(Math.max(1, cellSize + (zoomOut ? -1 : 1)*zoomDelta), 200);
-        let [pixelsX, pixelsY] = getPixelsFromMouseEvent(event)
-        pixelsX -= canvas.width/2
-        pixelsY -= canvas.height/2
-        const relX = centerX + pixelsX/cellSize;
-        const relY = centerY + pixelsY/cellSize;
-        centerX = (relX - pixelsX/newCellSize);
-        centerY = (relY - pixelsY/newCellSize);
-        centerX = Math.round(2*centerX)/2;
-        centerY = Math.round(2*centerY)/2;
-        cellSize = newCellSize;
-    }
-
-    let directions = new Set();
-    /**
-	 * @param {KeyboardEvent} event
-	 */
-    function onKeyDown(event) {
-        if ((event.code==="KeyW")||(event.code==="ArrowUp")) { // w or ArrowUp
-            directions.add('up');
-        } else if ((event.code==="KeyS")||(event.code==="ArrowDown")) { //s or ArrowDown
-            directions.add('down');
-        } else if ((event.code==="KeyA")||(event.code==="ArrowLeft")) { // a or ArrowLeft
-            directions.add('left');
-        } else if ((event.code==="KeyD")||(event.code==="ArrowRight")) { //d or ArrowRight
-            directions.add('right');
-        }
-        const delta = 20/cellSize
-        const deltaX = (directions.has('right') ? delta : 0) - (directions.has('left') ? delta : 0)
-        const deltaY = (directions.has('down') ? delta : 0) - (directions.has('up') ? delta : 0)
-        if ((deltaX!==0)||(deltaY!==0)) {
-            if (drawing) {
-                const cells = getCellsBetween(mouseX, mouseY, mouseX+deltaX, mouseY+deltaY)
-                if (cells.length > 0) {
-                    if (drawAlive) {
-                        updateGrid(cells, [])
-                    } else {
-                        updateGrid([], cells)
-                    }
-                }
-                mouseX += deltaX
-                mouseY += deltaY
-            }
-            centerX -= deltaX
-            centerY -= deltaY
-        }
-    }
-
-    
-    /**
-	 * @param {KeyboardEvent} event
-	 */
-    function onKeyUp(event) {
-        if ((event.code==="KeyW")||(event.code==="ArrowUp")) { // w or ArrowUp
-            directions.delete('up');
-        } else if ((event.code==="KeyS")||(event.code==="ArrowDown")) { //s or ArrowDown
-            directions.delete('down');
-        } else if ((event.code==="KeyA")||(event.code==="ArrowLeft")) { // a or ArrowLeft
-            directions.delete('left');
-        } else if ((event.code==="KeyD")||(event.code==="ArrowRight")) { //d or ArrowRight
-            directions.delete('right');
-        }
-    }
-
-    function coordToCell(cx, cy) {
-        return {
-            r: Math.floor(cy),
-            c: Math.floor(cx),
-        }
-    }
-    function getPixelsFromMouseEvent(event) {
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        return [x, y]
-    }
-
-
-    function getCoordFromMouseEvent(event) {
-        const [x, y] = getPixelsFromMouseEvent(event)
-        return pixelsToCoord(x, y)
-    }
-
-    function pixelsToCoord(x, y) {
-        const coord = [
-            centerX + (x-1-canvas.width/2 )/cellSize,
-            centerY + (y-1-canvas.height/2)/cellSize,
-        ]
-        return coord
-    }
-
-    function pixelsToCell(x, y) {
-        const [cx, cy] = pixelsToCoord(x, y);
-        return coordToCell(cx, cy)
-    }
-
-    function cellToTopLeftPixels(cell) {
-        const pixels = {
-            x: Math.floor(canvas.width/2  + 1 + (cell.c - centerX)*cellSize),
-            y: Math.floor(canvas.height/2 + 1 + (cell.r - centerY)*cellSize),
-        }
-        return pixels
-    }
-
-    function integersBetween(z1, z2) {
-        const result = []
-        if (z2 > z1) {
-            for (let i=Math.ceil(z1); i<z2; i++) {
-                result.push(i)
-            }
-        } else {
-            for (let i=Math.floor(z1); i>z2; i--) {
-                result.push(i)
-            }
-        }
-        return result
-    }
-
-    function getCellsBetween(x1, y1, x2, y2) {
-        const lx = x2 - x1;
-        const ly = y2 - y1;
-        let innerX, innerY
-        let cells = []
-        // look for points where the line intersects cell boundaries
-        // not guarding against duplicate cells here
-        for (innerX of integersBetween(x1, x2)) {
-            innerY = y1 + ly * (innerX - x1) / lx
-            cells.push(coordToCell(innerX-1, innerY))
-            cells.push(coordToCell(innerX, innerY))
-        }
-        for (innerY of integersBetween(y1, y2)) {
-            innerX = x1 + lx * (innerY - y1) / ly
-            cells.push(coordToCell(innerX, innerY-1))
-            cells.push(coordToCell(innerX, innerY))
-        }
-        return cells
-    }
-
-
-    function handleMouseDown(event) {
-        const [cx, cy] = getCoordFromMouseEvent(event)
-        const cell = coordToCell(cx, cy)
-        drawAlive = !(game.isCellAlive(cell))
-        if (drawAlive) {
-            updateGrid([cell], [])
-        } else {
-            updateGrid([], [cell])
-        }
-        drawing = true
-        mouseX = cx
-        mouseY = cy
-    }
-
-    function handleMouseMove(event) {
-        if (drawing) {
-            const [cx, cy] = getCoordFromMouseEvent(event)
-            const cells = getCellsBetween(mouseX, mouseY, cx, cy)
-            if (cells.length > 0) {
-                if (drawAlive) {
-                    updateGrid(cells, [])
-                } else {
-                    updateGrid([], cells)
-                }
-            }
-            mouseX = cx
-            mouseY = cy
-        }
-    }
-
-    function handleMouseUp(event) {
-        const [cx, cy] = getCoordFromMouseEvent(event)
-        const cell = coordToCell(cx, cy)
-        if (drawAlive) {
-            updateGrid([cell], [])
-        } else {
-            updateGrid([], [cell])
-        }
-        drawing = false
-    }
-
-    // touch handling
-    let ongoingTouches = []
-    let lastTouchTime = 0
-
-    function handleTouchStart(event) {
-        event.preventDefault();
-        for (let touch of event.changedTouches) {
-            ongoingTouches.push({
-                id: touch.identifier,
-                clientX: touch.clientX,
-                clientY: touch.clientY,
-            });
-        }
-        lastTouchTime = performance.now();
-        if (ongoingTouches.length==1) {
-            const [cx, cy] = getCoordFromMouseEvent(ongoingTouches[0])
-            const cell = coordToCell(cx, cy)
-            drawAlive = !(game.isCellAlive(cell))
-            drawing = true;
-        } else if (ongoingTouches.length>1) {
-            drawing = false;
-        }
-    }
-    function handleTouchMove(event) {
-        event.preventDefault();
-        let time = performance.now();
-        if ((time - lastTouchTime >= 50)
-                &&(ongoingTouches.length == 1)
-                &&(drawing)) {
-            // one finger moves - draw
-            const newTouch = event.changedTouches[0]
-            const [cx, cy] = getCoordFromMouseEvent(ongoingTouches[0])
-            const [newcx, newcy] = getCoordFromMouseEvent(newTouch)
-            const cells = getCellsBetween(newcx, newcy, cx, cy)
-            if (cells.length > 0) {
-                if (drawAlive) {
-                    updateGrid(cells, [])
-                } else {
-                    updateGrid([], cells)
-                }
-            }
-            ongoingTouches = [{
-                id: newTouch.identifier,
-                clientX: newTouch.clientX,
-                clientY: newTouch.clientY,
-            }];
-            lastTouchTime = time;
-        } else if ((time - lastTouchTime >= 200)
-                    &&(ongoingTouches.length==2)) {
-            // two fingers move - pan or zoom
-            const ids = ongoingTouches.map(item => item.id);
-            let newTouches = [...ongoingTouches]
-            let index
-            for (let touch of event.changedTouches) {
-                index = ids.indexOf(touch.identifier)
-                newTouches[index] = {
-                    id: touch.identifier,
-                    clientX: touch.clientX,
-                    clientY: touch.clientY,
-                }
-            }
-            // how much did distance in pixels change between fingers
-            // scale cell size that much
-            const oldDistance = Math.sqrt(
-                (ongoingTouches[0].clientX-ongoingTouches[1].clientX)**2
-                +(ongoingTouches[0].clientY-ongoingTouches[1].clientY)**2)
-            const newDistance = Math.sqrt(
-                (newTouches[0].clientX-newTouches[1].clientX)**2
-                +(newTouches[0].clientY-newTouches[1].clientY)**2)
-            const newCellSize = Math.max(1, Math.round(newDistance*cellSize/oldDistance))
-            // how much did fingers move from their previous position?
-            // move the screen in that average direction
-            const [cx0, cy0] = getCoordFromMouseEvent(ongoingTouches[0])
-            const [cx1, cy1] = getCoordFromMouseEvent(ongoingTouches[1])
-            cellSize = newCellSize
-            const [newcx0, newcy0] = getCoordFromMouseEvent(newTouches[0])
-            const [newcx1, newcy1] = getCoordFromMouseEvent(newTouches[1])
-            const deltaX = 0.5*(newcx0-cx0+newcx1-cx1)
-            const deltaY = 0.5*(newcy0-cy0+newcy1-cy1)
-            centerX = centerX-deltaX;
-            centerY = centerY-deltaY;
-            drawGrid()
-            ongoingTouches = newTouches
-            }
-    }
-
-    function handleTouchEnd(event) {
-        event.preventDefault();
-        if (drawing && (ongoingTouches.length===1)) {
-            const [cx, cy] = getCoordFromMouseEvent(event.changedTouches[0])
-            const cell = coordToCell(cx, cy)
-            if (drawAlive) {
-                updateGrid([cell], [])
-            } else {
-                updateGrid([], [cell])
-            }
-            drawing = false;
-        }
-        for (let touch of event.changedTouches) {
-            ongoingTouches = ongoingTouches.filter(item => item.id!==touch.identifier)
-        }
-        lastTouchTime = performance.now();
-    }
 
     function step() {
         let t0 = performance.now()
@@ -366,6 +66,9 @@
             for (let i=0;i<steps;i++) {
                 step()
                 lastStepAt = performance.now()
+                if (game.drawBuffer.size == 0) {
+                    running = false
+                }
                 break // todo depending on step time do a few iterations or just one to avoid unresponsiveness
             }
             numCells = game.livingCells.size
@@ -401,9 +104,8 @@
 <svelte:window 
     bind:innerHeight={$geometry.height} 
     bind:innerWidth={$geometry.width} 
-    use:controls={{geometry, game}}
-    onkeydown={onKeyDown} 
-    onkeyup={onKeyUp}
+    onkeydown={hotkeys.onkeydown}
+    onkeyup={hotkeys.onkeyup}
 />
 
 <div class="controls">
@@ -447,22 +149,10 @@
     </ul>
     {/if}
 </div>
-<Canvas>
+<Canvas {...touch} {...mouse}>
     <Grid {gridColor} {backgroundColor}></Grid>
     <LivingCells {foregroundColor} {backgroundColor} {game} bind:this={cells}></LivingCells>
 </Canvas>
-<!-- <canvas id="gridCanvas"
-                class="gridCanvas"
-                bind:this={canvas}
-                onmouseup={handleMouseUp}
-                onmousedown={handleMouseDown}
-                onmousemove={handleMouseMove}
-                onwheel={zoom}
-                ontouchstart={handleTouchStart}
-                ontouchmove={handleTouchMove}
-                ontouchend={handleTouchEnd}
-                ontouchcancel={handleTouchEnd}
-                ></canvas> -->
 
 <style>
     div.controls {
