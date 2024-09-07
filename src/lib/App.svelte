@@ -19,35 +19,28 @@
     setContext('geometry', geometry)
 
     const backgroundColor = '#000'
-    const foregroundColor = '#2bb'
     const gridColor = '#555'
 
-    let cellSize = $state(25);
-    let centerX = $state(0.5);
-    let centerY = $state(0.5);
     /** @type {LivingCells}*/
     let cells
-    /**@type {HTMLCanvasElement}*/
-    let canvas
-    /**@type {CanvasRenderingContext2D}*/
-    let context;
+
     let stepTime = $state(0);
     let drawTime = $state(0);
-
     let delay = $state(100);
     let running = $state(false);
     let helpVisible = $state(false);
 
-    let numCells=$state(0);
+    
     let game = new GameOfLife()
     const {hotkeys, touch, mouse} = createControls(geometry, game)
-
+    let numCells = $state(game.livingCells.size);
 
     function step() {
         let t0 = performance.now()
         let [births, deaths] = game.step();
         game.update(births, deaths)
         stepTime = Math.round(performance.now()-t0);
+        numCells = game.livingCells.size
     }
 
     /**
@@ -71,7 +64,6 @@
                 }
                 break // todo depending on step time do a few iterations or just one to avoid unresponsiveness
             }
-            numCells = game.livingCells.size
         }
         if (cells && game.drawBuffer.size > 0) {
             const t0 = performance.now()
@@ -79,6 +71,8 @@
             game.drawBuffer.clear()
             drawTime = Math.round(performance.now() - t0)
         }
+        // update numCells in case of user-drawn additions
+        numCells = game.livingCells.size
         requestAnimationFrame(animateStep)
     }
 
@@ -151,7 +145,7 @@
 </div>
 <Canvas {...touch} {...mouse}>
     <Grid {gridColor} {backgroundColor}></Grid>
-    <LivingCells {foregroundColor} {backgroundColor} {game} bind:this={cells}></LivingCells>
+    <LivingCells {backgroundColor} {game} bind:this={cells}></LivingCells>
 </Canvas>
 
 <style>

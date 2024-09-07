@@ -12,12 +12,11 @@
     /**
      * @typedef {Object} CellsProps
      * @property {String} backgroundColor
-     * @property {String} foregroundColor
      * @property {GameOfLife} game
      */
 
     /** @type {CellsProps}*/
-    let { backgroundColor, foregroundColor, game } = $props();
+    let { backgroundColor, game } = $props();
 
 
     function cellToTopLeftPixels(cell) {
