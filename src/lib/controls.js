@@ -198,19 +198,9 @@ export function createControls(geometry, game) {
         drawing = false
     }
 
-    /**
-	 * @param {KeyboardEvent} event
-	 */
-    function onkeydown(event) {
-        if ((event.code==="KeyW")||(event.code==="ArrowUp")) { // w or ArrowUp
-            directions.add('up');
-        } else if ((event.code==="KeyS")||(event.code==="ArrowDown")) { //s or ArrowDown
-            directions.add('down');
-        } else if ((event.code==="KeyA")||(event.code==="ArrowLeft")) { // a or ArrowLeft
-            directions.add('left');
-        } else if ((event.code==="KeyD")||(event.code==="ArrowRight")) { //d or ArrowRight
-            directions.add('right');
-        }
+    /** @type {number|undefined} */
+    let intervalId
+    function pan() {
         const {cellSize} = $geometry
         const delta = 20/cellSize
         const deltaX = (directions.has('right') ? delta : 0) - (directions.has('left') ? delta : 0)
@@ -232,7 +222,25 @@ export function createControls(geometry, game) {
                 value.centerX += deltaX
                 value.centerY += deltaY
                 return value
-            })
+            })    
+        }    
+    }
+
+    /**
+	 * @param {KeyboardEvent} event
+	 */
+    function onkeydown(event) {
+        if ((event.code==="KeyW")||(event.code==="ArrowUp")) { // w or ArrowUp
+            directions.add('up');
+        } else if ((event.code==="KeyS")||(event.code==="ArrowDown")) { //s or ArrowDown
+            directions.add('down');
+        } else if ((event.code==="KeyA")||(event.code==="ArrowLeft")) { // a or ArrowLeft
+            directions.add('left');
+        } else if ((event.code==="KeyD")||(event.code==="ArrowRight")) { //d or ArrowRight
+            directions.add('right');
+        }
+        if ((directions.size > 0)&&(intervalId===undefined)) {
+            intervalId = window.setInterval(pan, 50)
         }
     }
 
@@ -248,6 +256,10 @@ export function createControls(geometry, game) {
             directions.delete('left');
         } else if ((event.code==="KeyD")||(event.code==="ArrowRight")) { //d or ArrowRight
             directions.delete('right');
+        }
+        if (directions.size === 0) {
+            window.clearInterval(intervalId)
+            intervalId = undefined
         }
     }
 
