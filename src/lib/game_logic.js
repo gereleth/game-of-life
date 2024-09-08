@@ -1,3 +1,5 @@
+import { SvelteSet } from "svelte/reactivity"
+    
     /**
      * @typedef {Object} Cell
      * @property {Number} r - row number
@@ -14,6 +16,8 @@ export class GameOfLife {
         this.numNeighbors = new Map()
         this.generation = 0
         this.drawBuffer = new Map()
+        this.surviveN = new SvelteSet([2,3])
+        this.birthN = new SvelteSet([3])
 
         let births = []
         let n = 64
@@ -115,9 +119,9 @@ export class GameOfLife {
         let deaths = [];
         for (let [cell, num] of this.numNeighbors.entries()) {
             if (this.livingCells.has(cell)) {
-                if ((num<2)||(num>3)) {deaths.push(this.parse(cell))}
+                if (!this.surviveN.has(num)) {deaths.push(this.parse(cell))}
             } else {
-                if (num==3) {births.push(this.parse(cell))}
+                if (this.birthN.has(num)) {births.push(this.parse(cell))}
             }
         }
         return [births, deaths]
