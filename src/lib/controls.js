@@ -118,6 +118,8 @@ export function createControls(geometry, game) {
     let ongoingTouches = []
     let lastTouchTime = 0
     let directions = new Set();
+    let pinchStartDistance = -1
+    let pinchStartCellSize = 10
 
     /**
      * Zoom on mouse wheel
@@ -330,16 +332,19 @@ export function createControls(geometry, game) {
                     clientY: touch.clientY,
                 }
             }
+            let {cellSize, centerX, centerY} = $geometry
+            if (pinchStartDistance === -1) {
+                pinchStartDistance = Math.sqrt(
+                    (ongoingTouches[0].clientX-ongoingTouches[1].clientX)**2
+                    +(ongoingTouches[0].clientY-ongoingTouches[1].clientY)**2)
+                pinchStartCellSize = cellSize
+            }
             // how much did distance in pixels change between fingers
             // scale cell size that much
-            const oldDistance = Math.sqrt(
-                (ongoingTouches[0].clientX-ongoingTouches[1].clientX)**2
-                +(ongoingTouches[0].clientY-ongoingTouches[1].clientY)**2)
             const newDistance = Math.sqrt(
                 (newTouches[0].clientX-newTouches[1].clientX)**2
                 +(newTouches[0].clientY-newTouches[1].clientY)**2)
-            let {cellSize, centerX, centerY} = $geometry
-            const newCellSize = Math.max(1, Math.round(newDistance*cellSize/oldDistance))
+            const newCellSize = Math.max(1, Math.round(newDistance*pinchStartCellSize/pinchStartDistance))
             // how much did fingers move from their previous position?
             // move the screen in that average direction
             const [cx0, cy0] = getCoordFromMouseEvent(ongoingTouches[0], $geometry)
@@ -379,6 +384,9 @@ export function createControls(geometry, game) {
         }
         for (let touch of event.changedTouches) {
             ongoingTouches = ongoingTouches.filter(item => item.id!==touch.identifier)
+        }
+        if (ongoingTouches.length < 2) {
+            pinchStartDistance = -1
         }
         lastTouchTime = performance.now();
     }
