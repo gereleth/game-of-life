@@ -2,6 +2,25 @@
 
 An app to play with [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) in the browser.
 
-**[Try it out!](https://game-of-life.gereleth.vercel.app/)**
+Made with [Svelte 5](https://svelte.dev).
 
-Made as a hobby project. It uses [Svelte](https://svelte.dev) and is based on project template at https://github.com/sveltejs/template.
+## Features
+
+- infinite canvas with zoom and pan
+- click/touch and drag to draw or erase cells
+- adjustable simulation speed
+- change birth/survival rules on the fly
+
+## Developing
+
+Install dependencies:
+
+```bash
+pnpm install
+```
+
+Start a development server:
+
+```bash
+pnpm run dev
+```
