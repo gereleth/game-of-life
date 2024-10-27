@@ -22,10 +22,10 @@
 		canvas.addEventListener('touchcancel', ontouchend, {passive:false})
 
 		return () => {
-			canvas.removeEventListener('touchstart', touchstart)
-			canvas.removeEventListener('touchmove', touchmove)
-			canvas.removeEventListener('touchend', touchend)
-			canvas.removeEventListener('touchcancel', touchcancel)
+			canvas.removeEventListener('touchstart', ontouchstart)
+			canvas.removeEventListener('touchmove', ontouchmove)
+			canvas.removeEventListener('touchend', ontouchend)
+			canvas.removeEventListener('touchcancel', ontouchend)
 		}
 	});
 </script>
