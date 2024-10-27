@@ -18,13 +18,13 @@ export class GameOfLife {
         this.drawBuffer = new Map()
         this.surviveN = new SvelteSet([2,3])
         this.birthN = new SvelteSet([3])
-
-        let births = []
-        let n = 64
-        for (let index = 0; index < 2*n; index++) {
-            births.push({r:index-n,c:0})
-        }
-        this.update(births, [])
+        // // create some starting cells for testing
+        // let births = []
+        // let n = 64
+        // for (let index = 0; index < 2*n; index++) {
+        //     births.push({r:index-n,c:0})
+        // }
+        // this.update(births, [])
     }
 
     static neighborhood = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
