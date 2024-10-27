@@ -1,5 +1,5 @@
 <script>
-    let {selected=$bindable()} = $props()
+    let {selected=$bindable(), min=0, max=8} = $props()
 
     function toggle(i) {
         if (selected.has(i)) {
@@ -10,8 +10,13 @@
     }
 </script>
 <div class="button-group">
-    {#each Array(9) as _,i}
-         <button class:toggled={selected.has(i)} onclick={()=>toggle(i)}>{i}</button>
+    {#each Array(max-min+1) as _,i}
+        {@const value = min+i}
+         <button 
+            class:toggled={selected.has(value)} 
+            onclick={()=>toggle(value)}>
+            {value}
+        </button>
     {/each}
 </div>
 
@@ -34,10 +39,10 @@
         color: #444;
     }
     
-    button:first {
-        border-radius: 5px 5px 0 0;
+    button:first-child {
+        border-radius: 5px 0 0 5px;
     }
-    button:last {
-        border-radius: 0 0 5px 5px;
+    button:last-child {
+        border-radius: 0 5px 5px 0;
     }
 </style>
